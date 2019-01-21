@@ -4,6 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using System.IO;
+using System.Reflection;
+using static System.Net.Mime.MediaTypeNames;
+
 
 namespace ConsoleApp1
 {
@@ -11,27 +15,65 @@ namespace ConsoleApp1
     {
         static void Main(string[] args)
         {
+            List<Book> books = new List<Book>();
             var html = @"http://book.sfacg.com/List/?ud=7";
             var web = new HtmlWeb();
             var htmlDoc = web.Load(html);
             //var node = htmlDoc.DocumentNode.SelectSingleNode("/html/body/div[2]/div/div[2]/div[4]/ul[1]/li[1]/a");
-            var nodes = htmlDoc.DocumentNode.SelectNodes("//li[@class='Conjunction']/a");
-            List<Book> books = new List<Book>();
-            foreach (var node in nodes)
+            //var nodes = htmlDoc.DocumentNode.SelectNodes("//li[@class='Conjunction']/a");
+            var pagesNodes = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='list_pages']/ul[@class='nav pagebar']/li[4]/a");
+            int pages = Convert.ToInt32(pagesNodes.InnerHtml);
+            //Console.WriteLine(pages);
+            for (int i = 20; i > 0; i--)
             {
-                string bookHerf = node.Attributes["href"].Value;
-                string bID = bookHerf.Split('/')[2];
-                Console.WriteLine(bID);
-                books.Add(new Book(Convert.ToInt32(bID)));
-                //books[0].GetValues(bookHerf);
+                var ihtml = @"http://book.sfacg.com/List/default.aspx?ud=7&PageIndex=" + i;
+                var iweb = new HtmlWeb();
+                var ihtmlDoc = web.Load(ihtml);
+                var nodes = htmlDoc.DocumentNode.SelectNodes("//li[@class='Conjunction']/a");
+                foreach (var node in nodes)
+                {
+                    string bookHerf = node.Attributes["href"].Value;
+                    int bID = Convert.ToInt32(bookHerf.Split('/')[2]);
+                    //Console.WriteLine(bID);
+                    //var index = books.FindIndex(c => c.bookID == bID);
+                    bool containsItem = books.Any(o => o.bookID == bID);
+                    if (containsItem)
+                    {
+                        var index = books.FindIndex(c => c.bookID == bID);
+                        books[index] = new Book(bID);
+                    }
+                    else
+                    {
+                        books.Add(new Book(bID));
+
+                    }
+                    //books[0].GetValues(bookHerf);
+                }
             }
-            foreach (var eachBook in books)
+            //books.Sort(delegate (Book x, Book y) { return x.rank.CompareTo(y.rank); });
+            List<Book> sortBooks = books.OrderByDescending(o => o.rank).ToList();
+            Console.WriteLine(sortBooks.Count);
+            StreamWriter sw = new StreamWriter("sortList.csv", false, Encoding.GetEncoding("utf-8"));
+            using (sw)
             {
-                Console.WriteLine(eachBook.bookID);
-                //eachBook.GetValues()
+                //PropertyInfo[] props = GetPropertyInfoArray();
+                //for (int i = 0; i < props.Length; i++)
+                //{
+                //    sw.WriteLine(props[i].Name); //write the column name
+                //}
+                for (int i = 0; i < sortBooks.Count; i++)
+                {
+                    sw.WriteLine($"{sortBooks[i].bookID},{sortBooks[i].title},{string.Format("{0:0.00%}",sortBooks[i].rank)},{sortBooks[i].likesNum},{sortBooks[i].collectionNum}");
+                }
             }
+            //foreach (var eachBook in sortBooks)
+            //{
+            //    Console.WriteLine(eachBook.title);
+            //    Console.WriteLine(eachBook.likesNum);
+            //    Console.WriteLine(eachBook.collectionNum);
+            //    Console.WriteLine(string.Format("{0:0.00%}", eachBook.rank));
+            //}
             //Console.WriteLine(node.InnerHtml);
-            Console.ReadKey();
         }
     }
     struct Book
@@ -55,7 +97,7 @@ namespace ConsoleApp1
         public Book(int bid)
         {
             string bookHtml = @"http://book.sfacg.com/Novel/" + bid;
-            Console.WriteLine(bookHtml);
+            //Console.WriteLine(bookHtml);
             HtmlWeb bookWeb = new HtmlWeb();
             HtmlDocument bookHtmlDoc = bookWeb.Load(bookHtml);
             title = bookHtmlDoc.DocumentNode.SelectSingleNode("//h1[@class='title']/span").InnerHtml;
@@ -63,19 +105,26 @@ namespace ConsoleApp1
             //this.words = Convert.ToUInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//p[@class='introduce']").InnerHtml,16);
             likesNum = Convert.ToInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//*[@id='BasicOperation']/a[2]").InnerHtml.Split()[1]);
             collectionNum = Convert.ToInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//*[@id='BasicOperation']/a[3]").InnerHtml.Split()[1]);
-            if (collectionNum < 500)
+            switch (collectionNum)
             {
-                rank = (Convert.ToDouble(likesNum) * Convert.ToDouble(collectionNum)) / (500*Convert.ToDouble(collectionNum));
+                case int n when (n<=500):
+                    rank = (Convert.ToDouble(likesNum) * Convert.ToDouble(collectionNum)) / (500 * Convert.ToDouble(collectionNum));
+                    break;
+                //case int n when (collectionNum > 500 && collectionNum <= 3000):
+                //    rank = (Convert.ToDouble(likesNum) * Convert.ToDouble(collectionNum)) / (3000 * Convert.ToDouble(collectionNum));
+                //    break;
+                //case int n when (collectionNum > 3000 && collectionNum <= 10000):
+                //    rank = (Convert.ToDouble(likesNum) * Convert.ToDouble(collectionNum)) / (10000 * Convert.ToDouble(collectionNum));
+                //    break;
+                default:
+                    rank = Convert.ToDouble(likesNum) / Convert.ToDouble(collectionNum);
+                    break;
             }
-            else
-            {
-                rank = Convert.ToDouble(likesNum) / Convert.ToDouble(collectionNum);
-            }
-            Console.WriteLine(title);
-            Console.WriteLine(likesNum);
-            Console.WriteLine(collectionNum);
-            Console.WriteLine(string.Format("{0:0.00%}", rank));
-            Console.WriteLine();
+            //Console.WriteLine(title);
+            //Console.WriteLine(likesNum);
+            //Console.WriteLine(collectionNum);
+            //Console.WriteLine(string.Format("{0:0.00%}", rank));
+            //Console.WriteLine();
             //string this.title = bookNode.
         }
         
