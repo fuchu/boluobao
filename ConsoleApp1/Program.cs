@@ -18,18 +18,19 @@ namespace ConsoleApp1
             List<Book> books = new List<Book>();
             var html = @"http://book.sfacg.com/List/?ud=7";
             var web = new HtmlWeb();
+
             var htmlDoc = web.Load(html);
             //var node = htmlDoc.DocumentNode.SelectSingleNode("/html/body/div[2]/div/div[2]/div[4]/ul[1]/li[1]/a");
             //var nodes = htmlDoc.DocumentNode.SelectNodes("//li[@class='Conjunction']/a");
             var pagesNodes = htmlDoc.DocumentNode.SelectSingleNode("//div[@class='list_pages']/ul[@class='nav pagebar']/li[4]/a");
             int pages = Convert.ToInt32(pagesNodes.InnerHtml);
             //Console.WriteLine(pages);
-            for (int i = 20; i > 0; i--)
+            for (int i = pages; i > 0; i--)
             {
                 var ihtml = @"http://book.sfacg.com/List/default.aspx?ud=7&PageIndex=" + i;
                 var iweb = new HtmlWeb();
                 var ihtmlDoc = web.Load(ihtml);
-                var nodes = htmlDoc.DocumentNode.SelectNodes("//li[@class='Conjunction']/a");
+                var nodes = ihtmlDoc.DocumentNode.SelectNodes("//li[@class='Conjunction']/a");
                 foreach (var node in nodes)
                 {
                     string bookHerf = node.Attributes["href"].Value;
