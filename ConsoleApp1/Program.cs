@@ -27,6 +27,7 @@ namespace ConsoleApp1
             //Console.WriteLine(pages);
             for (int i = pages; i > 0; i--)
             {
+                Console.WriteLine("Complete page: {0}/{1}", pages - i, pages);
                 var ihtml = @"http://book.sfacg.com/List/default.aspx?ud=7&PageIndex=" + i;
                 var iweb = new HtmlWeb();
                 var ihtmlDoc = web.Load(ihtml);
