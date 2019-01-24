@@ -7,7 +7,7 @@ using HtmlAgilityPack;
 using System.IO;
 using System.Reflection;
 using static System.Net.Mime.MediaTypeNames;
-
+using System.Collections;
 
 namespace ConsoleApp1
 {
@@ -55,19 +55,56 @@ namespace ConsoleApp1
             //books.Sort(delegate (Book x, Book y) { return x.rank.CompareTo(y.rank); });
             List<Book> sortBooks = books.OrderByDescending(o => o.rank).ToList();
             Console.WriteLine(sortBooks.Count);
-            StreamWriter sw = new StreamWriter("sortList.csv", false, Encoding.GetEncoding("utf-8"));
-            using (sw)
+            writeExcel("sortList.csv",sortBooks);
+            void writeExcel(string dstFile,List<Book> sbooks)
             {
-                //PropertyInfo[] props = GetPropertyInfoArray();
-                //for (int i = 0; i < props.Length; i++)
-                //{
-                //    sw.WriteLine(props[i].Name); //write the column name
-                //}
-                for (int i = 0; i < sortBooks.Count; i++)
+                StreamWriter sw = new StreamWriter(dstFile, false, Encoding.GetEncoding("utf-8"));
+                using (sw)
                 {
-                    sw.WriteLine($"{sortBooks[i].bookID},{sortBooks[i].title},{string.Format("{0:0.00%}",sortBooks[i].rank)},{sortBooks[i].likesNum},{sortBooks[i].collectionNum}");
+                    //PropertyInfo[] props = GetPropertyInfoArray();
+                    //for (int i = 0; i < props.Length; i++)
+                    //{
+                    //    sw.WriteLine(props[i].Name); //write the column name
+                    //}
+                    sw.WriteLine($"BookID,书名,参考分(测试中),赞,收藏,字数,更新状态,作者,标签,链接");
+                    for (int i = 0; i < sbooks.Count; i++)
+                    {
+                        Book eachBook = sbooks[i];
+                        string tagStr = string.Join(";", eachBook.tags.ToArray()).Replace(System.Environment.NewLine, "");
+                        sw.WriteLine($"{eachBook.bookID}," +
+                            $"{eachBook.title}," +
+                            $"{string.Format("{0:0.00%}", eachBook.rank)}," +
+                            $"{eachBook.likesNum}," +
+                            $"{eachBook.collectionNum}," +
+                            $"{eachBook.words}," +
+                            $"{eachBook.status}," +
+                            $"{eachBook.author}," +
+                            $"{tagStr}," + 
+                            $"{eachBook.link}");
+                    }
                 }
             }
+            //StreamWriter sw = new StreamWriter("sortList.csv", false, Encoding.GetEncoding("utf-8"));
+            //using (sw)
+            //{
+            //    //PropertyInfo[] props = GetPropertyInfoArray();
+            //    //for (int i = 0; i < props.Length; i++)
+            //    //{
+            //    //    sw.WriteLine(props[i].Name); //write the column name
+            //    //}
+            //    for (int i = 0; i < sortBooks.Count; i++)
+            //    {
+            //        Book eachBook = sortBooks[i];
+            //        sw.WriteLine($"{eachBook.bookID}," +
+            //            $"{eachBook.title}," +
+            //            $"{string.Format("{0:0.00%}", eachBook.rank)}," +
+            //            $"{eachBook.likesNum}," +
+            //            $"{eachBook.collectionNum}," +
+            //            $"{eachBook.words}," +
+            //            $"{eachBook.status}," + 
+            //            $"{eachBook.author}");
+            //    }
+            //}
             //foreach (var eachBook in sortBooks)
             //{
             //    Console.WriteLine(eachBook.title);
@@ -82,19 +119,21 @@ namespace ConsoleApp1
     {
         public int bookID;
         public string title;
-        //public uint words;
+        public int words;
+        public string status;
         //public DateTime updateTime;
-        //public Array tags;
+        public ArrayList tags;
         //public uint pv;//click number
         public int likesNum;
         public int collectionNum;
         //public uint passNum;
         //public short score;
         //public string coverUrl;
-        //public string author;
+        public string author;
         //public string subject;//theme
         //public string description;
         public double rank;
+        public string link;
 
         public Book(int bid)
         {
@@ -102,11 +141,25 @@ namespace ConsoleApp1
             //Console.WriteLine(bookHtml);
             HtmlWeb bookWeb = new HtmlWeb();
             HtmlDocument bookHtmlDoc = bookWeb.Load(bookHtml);
-            title = bookHtmlDoc.DocumentNode.SelectSingleNode("//h1[@class='title']/span").InnerHtml;
+            title = bookHtmlDoc.DocumentNode.SelectSingleNode("//h1[@class='title']/span").InnerHtml.Replace(System.Environment.NewLine, "");
             bookID = bid;
             //this.words = Convert.ToUInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//p[@class='introduce']").InnerHtml,16);
             likesNum = Convert.ToInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//*[@id='BasicOperation']/a[2]").InnerHtml.Split()[1]);
             collectionNum = Convert.ToInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//*[@id='BasicOperation']/a[3]").InnerHtml.Split()[1]);
+            string wordsAndstatus = bookHtmlDoc.DocumentNode.SelectSingleNode("//div[@class='count-detail']/div[@class='text-row']/span[2]").InnerHtml.Split()[0];
+            words = Convert.ToInt32(System.Text.RegularExpressions.Regex.Replace(wordsAndstatus,@"[^0-9]+", ""));
+            status = wordsAndstatus.Split('[', ']')[1].Replace(System.Environment.NewLine, "");
+            author = bookHtmlDoc.DocumentNode.SelectSingleNode("//div[@class='author-name']/span").InnerHtml.Replace(System.Environment.NewLine, "");
+            HtmlNodeCollection tagList = bookHtmlDoc.DocumentNode.SelectNodes("//li[@class='tag']/a/span[@class='text']");
+            tags = new ArrayList();
+            if (tagList!=null)
+            {
+                foreach (var item in tagList)
+                {
+                    tags.Add(item.InnerHtml);
+                }
+            }
+            link = bookHtml;
             switch (collectionNum)
             {
                 case int n when (n<=500):
