@@ -70,7 +70,7 @@ namespace ConsoleApp1
                     for (int i = 0; i < sbooks.Count; i++)
                     {
                         Book eachBook = sbooks[i];
-                        string tagStr = string.Join(";", eachBook.tags.ToArray()).Replace(System.Environment.NewLine, "");
+                        string tagStr = string.Join(";", eachBook.tags.ToArray()).Replace("\n", "");
                         sw.WriteLine($"{eachBook.bookID}," +
                             $"{eachBook.title}," +
                             $"{string.Format("{0:0.00%}", eachBook.rank)}," +
@@ -141,15 +141,15 @@ namespace ConsoleApp1
             //Console.WriteLine(bookHtml);
             HtmlWeb bookWeb = new HtmlWeb();
             HtmlDocument bookHtmlDoc = bookWeb.Load(bookHtml);
-            title = bookHtmlDoc.DocumentNode.SelectSingleNode("//h1[@class='title']/span").InnerHtml.Replace(System.Environment.NewLine, "");
+            title = bookHtmlDoc.DocumentNode.SelectSingleNode("//h1[@class='title']/span").InnerHtml.Replace("\n", "");
             bookID = bid;
             //this.words = Convert.ToUInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//p[@class='introduce']").InnerHtml,16);
             likesNum = Convert.ToInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//*[@id='BasicOperation']/a[2]").InnerHtml.Split()[1]);
             collectionNum = Convert.ToInt32(bookHtmlDoc.DocumentNode.SelectSingleNode("//*[@id='BasicOperation']/a[3]").InnerHtml.Split()[1]);
             string wordsAndstatus = bookHtmlDoc.DocumentNode.SelectSingleNode("//div[@class='count-detail']/div[@class='text-row']/span[2]").InnerHtml.Split()[0];
             words = Convert.ToInt32(System.Text.RegularExpressions.Regex.Replace(wordsAndstatus,@"[^0-9]+", ""));
-            status = wordsAndstatus.Split('[', ']')[1].Replace(System.Environment.NewLine, "");
-            author = bookHtmlDoc.DocumentNode.SelectSingleNode("//div[@class='author-name']/span").InnerHtml.Replace(System.Environment.NewLine, "");
+            status = wordsAndstatus.Split('[', ']')[1].Replace("\n", "");
+            author = bookHtmlDoc.DocumentNode.SelectSingleNode("//div[@class='author-name']/span").InnerHtml.Replace("\n", "");
             HtmlNodeCollection tagList = bookHtmlDoc.DocumentNode.SelectNodes("//li[@class='tag']/a/span[@class='text']");
             tags = new ArrayList();
             if (tagList!=null)
